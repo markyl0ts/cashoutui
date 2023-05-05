@@ -1,5 +1,17 @@
 <?php
 
+function get_request($url){
+    $baseUrl = "http://localhost:8080/connector/";
+    $curlCon = curl_init();
+    curl_setopt($curlCon, CURLOPT_URL, $baseUrl.$url);
+    curl_setopt($curlCon, CURLOPT_RETURNTRANSFER, true);
+    
+    $response = curl_exec($curlCon);
+    curl_close($curlCon);
+
+    return $response;
+}
+
 function OpenConnection(){
     $serverName = "192.168.254.121,1433";
     $connectionOptions = array("Database"=>"CashOut",

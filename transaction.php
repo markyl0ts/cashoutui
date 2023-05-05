@@ -25,62 +25,29 @@
     <?php 
     include('includes/functions.php');
 
-    $amount = 0;
-    $systemId = 0;
     $reference = $_GET['reference'];
+    $transObj = json_decode(get_request("transaction.php?action=reference&reference=".$reference));
+    $amount = $transObj->Amount;
+    $systemId = $transObj->SystemId;
 
-    try {
-        $conn = OpenConnection();
-        $sqlQry = "SELECT * FROM [Transaction] WHERE [Reference] = '". $_GET['reference']."'";
-        $getRecord = sqlsrv_query($conn, $sqlQry);
-        if ($getRecord == FALSE)
-            die(FormatErrors(sqlsrv_errors()));
-
-        while($row = sqlsrv_fetch_array($getRecord, SQLSRV_FETCH_ASSOC))
-        {
-            $amount = $row['Amount'];
-            $systemId = $row['SystemId'];
-        }
-        
-        sqlsrv_free_stmt($getRecord);
-        sqlsrv_close($conn);
-    } catch(Exception $e){
-        
-    }
-
-    $bc50 = 0;
-    $bc100 = 0;
-    $bc200 = 0;
-    $bc500 = 0;
-    $bc1000 = 0;
-    
-    try {
-        $conn = OpenConnection();
-        $sqlQry = "SELECT * FROM [BillCounter] WHERE SystemId = $systemId";
-        $getRecord = sqlsrv_query($conn, $sqlQry);
-        if ($getRecord == FALSE)
-            die(FormatErrors(sqlsrv_errors()));
-
-        while($row = sqlsrv_fetch_array($getRecord, SQLSRV_FETCH_ASSOC))
-        {
-            $bc50 = $row['50Bill'];
-            $bc100 = $row['100Bill'];
-            $bc200 = $row['200Bill'];
-            $bc500 = $row['500Bill'];
-            $bc1000 = $row['1000Bill'];
-        }
-        
-        sqlsrv_free_stmt($getRecord);
-        sqlsrv_close($conn);
-    } catch(Exception $e){
-    }
+    $billObj = json_decode(get_request("bill.php?action=bymachine&id=$systemId"));
+    $bc50 = $billObj->b50;
+    $bc100 = $billObj->b100;
+    $bc200 = $billObj->b200;
+    $bc500 = $billObj->b500;
+    $bc1000 = $billObj->b1000;
 
 
     if(isset($_POST['dispense'])){
         $cmd = "python Dispense-Cash.py $amount $reference $systemId $bc50 $bc100 $bc200 $bc500 $bc1000";
+        echo $cmd;
         //exec($cmd);
     }
 
+    if(isset($_POST['cancel']))
+        $updObj = json_decode(get_request("transaction.php?action=update&sb=status&status=2&reference=$reference"));
+        if(!empty($updObj))
+            header("Location: index.php");
     ?>
 
     <div class="container my-4 py-4">
@@ -94,6 +61,7 @@
                 <form method="POST" action="<?=$_SERVER['REQUEST_URI']?>">
                     <input type="text" id="refNo" value="<?=$reference?>" />
                     <button type="submit" name="dispense" id="dispense" >Dispense</button>
+                    <button type="submit" name="cancel" id="dispense" >Cancel</button>
                 </form>
             </center>
         </div>

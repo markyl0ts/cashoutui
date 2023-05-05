@@ -105,6 +105,7 @@
 
             update_machine_balance($systemId);
             update_transaction_status($reference, 1);
+            json_decode(get_request("transaction.php?action=update&sb=status&status=1&reference=$reference"));
             add_machine_accumulated_ammount($systemId,$fee);
             update_contact_balance($contactId,$total);
         } catch(Exception $e){
