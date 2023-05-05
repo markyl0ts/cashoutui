@@ -88,31 +88,40 @@
         }
         else
         {
-          //-- Check wallet balance
-          $isEnoughtWalletBalance = false;
-          $walletBalance = 0;
-          $walletObj = json_decode(get_request("wallet.php?action=bycontact&id=$contactId"));
-          if(!empty($walletObj))
-          {
-            if($walletObj->Balance > $amount)
-                  $isEnoughtWalletBalance = true;
-          }
-
-          if(!$isEnoughtWalletBalance)
+          $isMachineBalanceAndAmountValid = false;
+          if($amount > $machineBalance)
           {
             $formFlag = 2;
-            $formMsg = "Wallet balance is not enough!";
+            $formMsg = "You entered amount more than machine can dispense";
           }
           else
           {
-            //-- Show confirmation
-            echo "
-              <script>
-                $(function(){
-                  $('#confirmModal').modal('show');
-                });
-              </script>
-            ";
+            //-- Check wallet balance
+            $isEnoughtWalletBalance = false;
+            $walletBalance = 0;
+            $walletObj = json_decode(get_request("wallet.php?action=bycontact&id=$contactId"));
+            if(!empty($walletObj))
+            {
+              if($walletObj->Balance > $amount)
+                $isEnoughtWalletBalance = true;
+            }
+
+            if(!$isEnoughtWalletBalance)
+            {
+              $formFlag = 2;
+              $formMsg = "Wallet balance is not enough!";
+            }
+            else
+            {
+              //-- Show confirmation
+              echo "
+                <script>
+                  $(function(){
+                    $('#confirmModal').modal('show');
+                  });
+                </script>
+              ";
+            }
           }
         }
       }
