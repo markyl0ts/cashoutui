@@ -7,12 +7,6 @@
     <link rel="stylesheet" href="assets/css/bootstrap.min.css">
     <link rel="stylesheet" href="assets/plugins/jqbtk/jqbtk.min.css" />
     <link rel="stylesheet" href="assets/css/styles.css">
-    <script>
-      <?php
-        echo "var systemId = 1;";
-        echo "var apiUrl = 'http://dev.cashout.com/api/';";
-      ?>
-    </script>
   </head>
   <body>
     <div class="container my-3 py-3">
@@ -69,17 +63,5 @@
 
     <script src="assets/js/jquery.min.js"></script>
     <script src="assets/js/bootstrap.min.js"></script>
-    <script src="assets/js/sweetalert.min.js"></script>
-    <script src="assets/js/qrcode.js"></script>
-    <script>
-        var qrcode = new QRCode(document.getElementById("qrcode"), {
-            text: "http://jindo.dev.naver.com/collie",
-            width: 300,
-            height: 300,
-            colorDark : "#000000",
-            colorLight : "#ffffff",
-            correctLevel : QRCode.CorrectLevel.H
-        });
-    </script>
     </body>
 </html>

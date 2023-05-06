@@ -73,56 +73,65 @@
         $phone = $_POST['phone'];
         $contactId = 0;
         $isContactFound = false;
-        //-- Check contact
-        $contactObj = json_decode(get_request("contact.php?action=byphone&phone=$phone"));
-        if(!empty($contactObj))
+        
+        if($amount % 50 == 0)
         {
-          $isContactFound = true;
-          $contactId = $contactObj->id;
-        }
+          //-- Check contact
+          $contactObj = json_decode(get_request("contact.php?action=byphone&phone=$phone"));
+          if(!empty($contactObj))
+          {
+            $isContactFound = true;
+            $contactId = $contactObj->id;
+          }
 
-        if(!$isContactFound)
-        {
-          $formFlag = 2;
-          $formMsg = "No contact data found using that phone number!";
-        }
-        else
-        {
-          $isMachineBalanceAndAmountValid = false;
-          if($amount > $machineBalance)
+          if(!$isContactFound)
           {
             $formFlag = 2;
-            $formMsg = "You entered amount more than machine can dispense";
+            $formMsg = "No contact data found using that phone number!";
           }
           else
           {
-            //-- Check wallet balance
-            $isEnoughtWalletBalance = false;
-            $walletBalance = 0;
-            $walletObj = json_decode(get_request("wallet.php?action=bycontact&id=$contactId"));
-            if(!empty($walletObj))
-            {
-              if($walletObj->Balance > $amount)
-                $isEnoughtWalletBalance = true;
-            }
-
-            if(!$isEnoughtWalletBalance)
+            $isMachineBalanceAndAmountValid = false;
+            if($amount > $machineBalance)
             {
               $formFlag = 2;
-              $formMsg = "Wallet balance is not enough!";
+              $formMsg = "You entered amount more than machine can dispense";
             }
             else
             {
-              //-- Show confirmation
-              echo "
-                <script>
-                  $(function(){
-                    $('#confirmModal').modal('show');
-                  });
-                </script>
-              ";
+              //-- Check wallet balance
+              $isEnoughtWalletBalance = false;
+              $walletBalance = 0;
+              $walletObj = json_decode(get_request("wallet.php?action=bycontact&id=$contactId"));
+              if(!empty($walletObj))
+              {
+                if($walletObj->Balance > $amount)
+                  $isEnoughtWalletBalance = true;
+              }
+
+              if(!$isEnoughtWalletBalance)
+              {
+                $formFlag = 2;
+                $formMsg = "Wallet balance is not enough!";
+              }
+              else
+              {
+                //-- Show confirmation
+                echo "
+                  <script>
+                    $(function(){
+                      $('#confirmModal').modal('show');
+                    });
+                  </script>
+                ";
+              }
             }
           }
+        }
+        else
+        {
+          $formFlag = 2;
+          $formMsg = "Amount should be divisible by 50";
         }
       }
 

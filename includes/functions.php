@@ -48,31 +48,12 @@ function in_close_session(){
 }
 
 function update_machine_balance($machineId){
-    $bc50 = 0;
-    $bc100 = 0;
-    $bc200 = 0;
-    $bc500 = 0;
-    $bc1000 = 0;
-    
-    try {
-        $conn = OpenConnection();
-        $sqlQry = "SELECT * FROM [BillCounter] WHERE SystemId = ". $machineId;
-        $getRecord = sqlsrv_query($conn, $sqlQry);
-        if ($getRecord == FALSE)
-            die(FormatErrors(sqlsrv_errors()));
-
-        while($row = sqlsrv_fetch_array($getRecord, SQLSRV_FETCH_ASSOC))
-        {
-            $bc50 = $row['50Bill'];
-            $bc100 = $row['100Bill'];
-            $bc200 = $row['200Bill'];
-            $bc500 = $row['500Bill'];
-            $bc1000 = $row['1000Bill'];
-        }
-        
-        sqlsrv_free_stmt($getRecord);
-        sqlsrv_close($conn);
-    } catch(Exception $e){}
+    $billObj = json_decode(get_request("bill.php?action=bymachine&id=$machineId"));
+    $bc50 = $billObj->b50;
+    $bc100 = $billObj->b100;
+    $bc200 = $billObj->b200;
+    $bc500 = $billObj->b500;
+    $bc1000 = $billObj->b1000;
 
     $total = 0;
     if($bc50 > 0)
@@ -90,87 +71,6 @@ function update_machine_balance($machineId){
     if($bc1000 > 0)
         $total = $total + (1000 * $bc1000);
 
-    try {
-        $conn = OpenConnection();
-        if (sqlsrv_begin_transaction($conn) == FALSE){
-            die(sqlsrv_errors());
-        }
-
-        $sqlQry = "UPDATE [System] SET [Balance] = ".$total." WHERE Id = ". $machineId;
-        $exec = sqlsrv_query($conn, $sqlQry);
-
-        if($exec){
-            sqlsrv_commit($conn);
-        }
-        
-        sqlsrv_free_stmt($exec);
-        sqlsrv_close($conn);
-    } catch(Exception $e){
-        die(sqlsrv_errors());
-    }
+    $updObj = json_decode(get_request("machine.php?action=update&field=balance&total=$total&id=$machineId"));
 }
-
-function add_machine_accumulated_ammount($machineId, $fee){
-    try {
-        $conn = OpenConnection();
-        if (sqlsrv_begin_transaction($conn) == FALSE){
-            die(sqlsrv_errors());
-        }
-
-        $sqlQry = "UPDATE [System] SET [AccumulatedAmount] = [AccumulatedAmount] + ".$fee." WHERE Id = ". $machineId;
-        $exec = sqlsrv_query($conn, $sqlQry);
-
-        if($exec){
-            sqlsrv_commit($conn);
-        }
-        
-        sqlsrv_free_stmt($exec);
-        sqlsrv_close($conn);
-    } catch(Exception $e){
-        die(sqlsrv_errors());
-    }
-}
-
-function update_contact_balance($contactId, $total){
-    try {
-        $conn = OpenConnection();
-        if (sqlsrv_begin_transaction($conn) == FALSE){
-            die(sqlsrv_errors());
-        }
-
-        $sqlQry = "UPDATE [Wallet] SET [Balance] = [Balance] - ".$total." WHERE ContactId = ". $contactId;
-        $exec = sqlsrv_query($conn, $sqlQry);
-
-        if($exec){
-            sqlsrv_commit($conn);
-        }
-        
-        sqlsrv_free_stmt($exec);
-        sqlsrv_close($conn);
-    } catch(Exception $e){
-        die(sqlsrv_errors());
-    }
-}
-
-function update_transaction_status($reference, $status){
-    try {
-        $conn = OpenConnection();
-        if (sqlsrv_begin_transaction($conn) == FALSE){
-            die(sqlsrv_errors());
-        }
-
-        $sqlQry = "UPDATE [Transaction] SET [Status] = ".$status." WHERE [Reference] = '". $reference."'";
-        $exec = sqlsrv_query($conn, $sqlQry);
-
-        if($exec){
-            sqlsrv_commit($conn);
-        }
-        
-        sqlsrv_free_stmt($exec);
-        sqlsrv_close($conn);
-    } catch(Exception $e){
-        die(sqlsrv_errors());
-    }
-}
-
 ?>

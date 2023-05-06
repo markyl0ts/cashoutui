@@ -13,103 +13,40 @@
     $dbFlag = 0;
 
     //-- Update bill counter
-    try {
-        $conn = OpenConnection();
-        if (sqlsrv_begin_transaction($conn) == FALSE){
-            $dbFlag = 2;
-        }
-
-        $sqlQry = "UPDATE [BillCounter] SET 
-                        [50Bill] = [50Bill] - ".$bc50.", 
-                        [100Bill] = [100Bill] - ".$bc100.", 
-                        [200Bill] = [200Bill] - ".$bc200.", 
-                        [500Bill] = [500Bill] - ".$bc500.", 
-                        [1000Bill] = [1000Bill] - ".$bc1000." 
-                    WHERE SystemId = ". $systemId;
-        $exec = sqlsrv_query($conn, $sqlQry);
-        
-        if($exec){
-            sqlsrv_commit($conn);
-            $dbFlag = 1;
-        }
-        
-        sqlsrv_free_stmt($exec);
-        sqlsrv_close($conn);
-    } catch(Exception $e){
-        $dbFlag = 2;
-    }
+    $billUpdObj = json_decode(get_request("bill.php?action=update&systemId=$systemId&bc50=$bc50&bc100=$bc100&bc200=$bc200&bc500=$bc500&bc1000=$bc1000"));
     
-    if($dbFlag == 1){
+    if($billUpdObj->trans == 1){
         //-- Print Transaction
-        try {
-            $conn = OpenConnection();
-            $sqlQry = "SELECT 
-                            t.*,
-                            c.FullName,
-                            c.PhoneNo,
-                            (SELECT w.Balance FROM [Wallet] w WHERE w.ContactId = t.ContactId) as 'Balance',
-                            (SELECT rr.Fee FROM RateRange rr WHERE rr.Id = t.RateRangeId) as 'Fee'
-                        FROM [Transaction] t JOIN [Contact] c 
-                            ON t.ContactId = c.Id
-                    WHERE [Reference] = '". $_GET['reference']."'";
-            $getRecord = sqlsrv_query($conn, $sqlQry);
-            if ($getRecord == FALSE)
-                die(FormatErrors(sqlsrv_errors()));
+        $printObj = json_decode(get_request("custom.php?action=print_data&reference=$reference"));
 
-            $name = "";
-            $amount = 0;
-            $phone = "";
-            $date = "";
-            $reference = "";
-            $fee = 0;
-            $contactId = 0;
-            $balance = 0;
-            $total = 0;
+        $commands = array (
 
-            while($row = sqlsrv_fetch_array($getRecord, SQLSRV_FETCH_ASSOC))
-            {
-                $name = $row['FullName'];
-                $amount = $row['Amount'];
-                $phone = $row['PhoneNo'];
-                $date = (string)$row['CreatedDate']->format('Y-m-d H:i:s');
-                $reference = $row['Reference'];
-                $fee = $row['Fee'];
-                $contactId = $row['ContactId'];
-                $balance = $row['Balance'];
-                $total = $amount + $fee;
-            }
+            'echo "  AUTOMATED CASHOUT MACHINE   "> /dev/usb/lp0',
+            'echo "____________________________"> /dev/usb/lp0',
+            'echo "\n"> /dev/usb/lp0',
+            'echo "Name: '.$printObj->FullName.'"> /dev/usb/lp0',
+            'echo "Account: '.$printObj->PhoneNo.'"> /dev/usb/lp0',
+            'echo "Date: '.(string)$printObj->CreatedDate->date.'"> /dev/usb/lp0',
+            'echo "Reference: '.$reference.'"> /dev/usb/lp0',
+            'echo "Amount: '.$printObj->Amount.'"> /dev/usb/lp0',
+            'echo "Fee: '.$printObj->Fee.'"> /dev/usb/lp0',
+            'echo "Total Deduction: '.($printObj->Amount + $printObj->Fee).'"> /dev/usb/lp0',
+            'echo "\n"> /dev/usb/lp0',
+            'echo "____________________________"> /dev/usb/lp0',
+            'echo "\n\n"> /dev/usb/lp0',
+        );
 
-            $commands = array (
-
-                'echo "  AUTOMATED CASHOUT MACHINE   "> /dev/usb/lp0',
-                'echo "____________________________"> /dev/usb/lp0',
-                'echo "\n"> /dev/usb/lp0',
-                'echo "Name: '.$name.'"> /dev/usb/lp0',
-                'echo "Account: '.$phone.'"> /dev/usb/lp0',
-                'echo "Date: '.$date.'"> /dev/usb/lp0',
-                'echo "Reference: '.$reference.'"> /dev/usb/lp0',
-                'echo "Amount: '.$amount.'"> /dev/usb/lp0',
-                'echo "Fee: '.$fee.'"> /dev/usb/lp0',
-                'echo "Total Deduction: '.$total.'"> /dev/usb/lp0',
-                'echo "\n"> /dev/usb/lp0',
-                'echo "____________________________"> /dev/usb/lp0',
-                'echo "\n\n"> /dev/usb/lp0',
-            );
-            
-            foreach ($commands as $command) {
-                exec($command);
-            }
-
-            sqlsrv_free_stmt($getRecord);
-            sqlsrv_close($conn);
-
-            update_machine_balance($systemId);
-            update_transaction_status($reference, 1);
-            json_decode(get_request("transaction.php?action=update&sb=status&status=1&reference=$reference"));
-            add_machine_accumulated_ammount($systemId,$fee);
-            update_contact_balance($contactId,$total);
-        } catch(Exception $e){
-            
+        foreach ($commands as $command) {
+            exec($command);
         }
+
+        //-- Update Balance
+        update_machine_balance($printObj->SystemId);
+        //-- Update Status
+        json_decode(get_request("transaction.php?action=update&sb=status&status=1&reference=$reference"));
+        //-- Update accumulate amount
+        json_decode(get_request("machine.php?action=update&field=AccuAmount&fee=".$printObj->Fee."&id=$systemId"));
+        //-- Update wallet balance
+        json_decode(get_request("wallet.php?action=update&field=balance&balance=".($printObj->Amount + $printObj->Fee)."&contactId=$printObj->ContactId"));
     }
 ?>
